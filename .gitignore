@@ -1,3 +1,6 @@
 /MDK-ARM/*.lst
 /MDK-ARM/F429_MODBUS.uvguix.*
 /MDK-ARM/F429_MODBUS
+/STM32CubeIDE/Debug
+/STM32CubeIDE/Release
+/STM32CubeIDE/.settings
