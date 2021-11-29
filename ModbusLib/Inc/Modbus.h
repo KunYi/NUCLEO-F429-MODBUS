@@ -24,7 +24,7 @@ typedef enum
     USART_HW = 1,
     USB_CDC_HW = 2,
     TCP_HW = 3,
-	USART_HW_DMA = 4,
+    USART_HW_DMA = 4,
 }mb_hardware_t ;
 
 
@@ -118,9 +118,9 @@ enum
 };
 
 typedef union {
-	uint8_t  u8[4];
-	uint16_t u16[2];
-	uint32_t u32;
+    uint8_t  u8[4];
+    uint16_t u16[2];
+    uint32_t u32;
 
 } bytesFields ;
 
@@ -173,48 +173,52 @@ tcpclients_t;
 typedef struct
 {
 
-	mb_masterslave_t uModbusType;
-	UART_HandleTypeDef *port; //HAL Serial Port handler
-	uint8_t u8id; //!< 0=master, 1..247=slave number
-	GPIO_TypeDef* EN_Port; //!< flow control pin: 0=USB or RS-232 mode, >1=RS-485 mode
-	uint16_t EN_Pin;  //!< flow control pin: 0=USB or RS-232 mode, >1=RS-485 mode
-	mb_errot_t i8lastError;
-	uint8_t u8Buffer[MAX_BUFFER]; //Modbus buffer for communication
-	uint8_t u8BufferSize;
-	uint8_t u8lastRec;
-	uint16_t *u16regs;
-	uint16_t u16InCnt, u16OutCnt, u16errCnt; //keep statistics of Modbus traffic
-	uint16_t u16timeOut;
-	uint16_t u16regsize;
-	uint8_t dataRX;
-	int8_t i8state;
+    mb_masterslave_t uModbusType;
+    UART_HandleTypeDef *port; //HAL Serial Port handler
+    uint8_t u8id; //!< 0=master, 1..247=slave number
+    GPIO_TypeDef* EN_Port; //!< flow control pin: 0=USB or RS-232 mode, >1=RS-485 mode
+    uint16_t EN_Pin;  //!< flow control pin: 0=USB or RS-232 mode, >1=RS-485 mode
+    mb_errot_t i8lastError;
+    uint8_t u8Buffer[MAX_BUFFER]; //Modbus buffer for communication
+    uint8_t u8BufferSize;
+    uint8_t u8lastRec;
+    uint8_t* u8coils;
+    uint8_t* u8coilsmask;
+    uint16_t u16coilsize;
+    uint16_t *u16regs;
+    uint8_t *u8regsmask;
+    uint16_t u16InCnt, u16OutCnt, u16errCnt; //keep statistics of Modbus traffic
+    uint16_t u16timeOut;
+    uint16_t u16regsize;
+    uint8_t dataRX;
+    int8_t i8state;
 
-	//FreeRTOS components
+    //FreeRTOS components
 
-	//Queue Modbus Telegram
-	osMessageQueueId_t QueueTelegramHandle;
+    //Queue Modbus Telegram
+    osMessageQueueId_t QueueTelegramHandle;
 
-	//Task Modbus slave
-	osThreadId_t myTaskModbusAHandle;
-	//Timer RX Modbus
-	xTimerHandle xTimerT35;
-	//Timer MasterTimeout
-	xTimerHandle xTimerTimeout;
-	//Semaphore for Modbus data
-	osSemaphoreId_t ModBusSphrHandle;
-	// RX ring buffer for USART
-	modbusRingBuffer_t xBufferRX;
-	// type of hardware  TCP, USB CDC, USART
-	mb_hardware_t xTypeHW;
+    //Task Modbus slave
+    osThreadId_t myTaskModbusAHandle;
+    //Timer RX Modbus
+    xTimerHandle xTimerT35;
+    //Timer MasterTimeout
+    xTimerHandle xTimerTimeout;
+    //Semaphore for Modbus data
+    osSemaphoreId_t ModBusSphrHandle;
+    // RX ring buffer for USART
+    modbusRingBuffer_t xBufferRX;
+    // type of hardware  TCP, USB CDC, USART
+    mb_hardware_t xTypeHW;
 
 #if ENABLE_TCP == 1
 
-	tcpclients_t newconns[NUMBERTCPCONN];
-	struct netconn *conn;
-	uint32_t xIpAddress;
-	uint16_t u16TransactionID;
-	uint16_t uTcpPort; // this is only used for the slave (i.e., the server)
-	uint8_t newconnIndex;
+    tcpclients_t newconns[NUMBERTCPCONN];
+    struct netconn *conn;
+    uint32_t xIpAddress;
+    uint16_t u16TransactionID;
+    uint16_t uTcpPort; // this is only used for the slave (i.e., the server)
+    uint8_t newconnIndex;
 
 #endif
 

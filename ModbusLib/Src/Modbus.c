@@ -1552,11 +1552,11 @@ if(modH->xTypeHW != TCP_HW)
 
         ulTaskNotifyTake(pdTRUE, 250); //wait notification from TXE interrupt
 /*
-* If you are porting the library to a different MCU check the 
+* If you are porting the library to a different MCU check the
 * USART datasheet and add the corresponding family in the following
 * preprocessor conditions
 */
-#if defined(STM32H7)  || defined(STM32F3) || defined(STM32L4)  
+#if defined(STM32H7)  || defined(STM32F3) || defined(STM32L4)
           while((modH->port->Instance->ISR & USART_ISR_TC) ==0 )
 #else
           // F429, F103, L152 ...
@@ -1654,7 +1654,45 @@ if(modH->xTypeHW != TCP_HW)
 
 }
 
+/**
+ * @brief
+ * This method check have support coils functions
+ *
+ * @return u8BufferSize Response to master length
+ * @ingroup discrete
+ */
+static int8_t validateCoils(modbusHandler_t *modH)
+{
+    uint8_t u8CopyBufferSize = 0;
+    if ((modH->u8coils == NULL) || (modH->u16coilsize == 0)) {
+        modH->u8Buffer[0] |= 0x80;
+        modH->u8Buffer[1] =  1;	// exception not support the function
+        modH->u8BufferSize = 2;
+        u8CopyBufferSize = modH->u8BufferSize +2;
+        sendTxBuffer(modH);
+    }
+    return u8CopyBufferSize;
+}
 
+/**
+ * @brief
+ * This method check have support regs functions
+ *
+ * @return u8BufferSize Response to master length
+ * @ingroup register
+ */
+static int8_t validateRegs(modbusHandler_t *modH)
+{
+    uint8_t u8CopyBufferSize = 0;
+    if ((modH->u16regs == NULL) || (modH->u16regsize == 0)) {
+        modH->u8Buffer[0] |= 0x80;
+        modH->u8Buffer[1] =  1;	// exception not support the function
+        modH->u8BufferSize = 2;
+        u8CopyBufferSize = modH->u8BufferSize +2;
+        sendTxBuffer(modH);
+    }
+    return u8CopyBufferSize;
+}
 /**
  * @brief
  * This method processes functions 1 & 2
@@ -1669,6 +1707,9 @@ int8_t process_FC1(modbusHandler_t *modH )
     uint8_t u8currentBit, u8bytesno, u8bitsno;
     uint8_t u8CopyBufferSize;
     uint16_t u16currentCoil, u16coil;
+
+    u8CopyBufferSize = validateCoils(modH);
+    if (u8CopyBufferSize != 0) return u8CopyBufferSize;
 
     // get the first and last coil from the message
     uint16_t u16StartCoil = word( modH->u8Buffer[ ADD_HI ], modH->u8Buffer[ ADD_LO ] );
@@ -1687,13 +1728,13 @@ int8_t process_FC1(modbusHandler_t *modH )
     for (u16currentCoil = 0; u16currentCoil < u16Coilno; u16currentCoil++)
     {
         u16coil = u16StartCoil + u16currentCoil;
-        u16currentRegister =  (u16coil / 16);
-        u8currentBit = (uint8_t) (u16coil % 16);
+        u16currentRegister =  (u16coil / 8);
+        u8currentBit = (uint8_t) (u16coil % 8);
 
         bitWrite(
-        	modH->u8Buffer[ modH->u8BufferSize ],
+            modH->u8Buffer[ modH->u8BufferSize ],
             u8bitsno,
-		    bitRead( modH->u16regs[ u16currentRegister ], u8currentBit ) );
+            bitRead( modH->u8coils[ u16currentRegister ], u8currentBit ) );
         u8bitsno ++;
 
         if (u8bitsno > 7)
@@ -1758,15 +1799,18 @@ int8_t process_FC5( modbusHandler_t *modH )
     uint8_t u8CopyBufferSize;
     uint16_t u16coil = word( modH->u8Buffer[ ADD_HI ], modH->u8Buffer[ ADD_LO ] );
 
+    u8CopyBufferSize = validateCoils(modH);
+    if (u8CopyBufferSize != 0) return u8CopyBufferSize;
+
     // point to the register and its bit
-    u16currentRegister = (u16coil / 16);
-    u8currentBit = (uint8_t) (u16coil % 16);
+    u16currentRegister = (u16coil / 8);
+    u8currentBit = (uint8_t) (u16coil % 8);
 
     // write to coil
     bitWrite(
-    	modH->u16regs[ u16currentRegister ],
+        modH->u8coils[ u16currentRegister ],
         u8currentBit,
-		modH->u8Buffer[ NB_HI ] == 0xff );
+        modH->u8Buffer[ NB_HI ] == 0xff );
 
 
     // send answer to master
@@ -1819,6 +1863,9 @@ int8_t process_FC15( modbusHandler_t *modH )
     uint16_t u16currentCoil, u16coil;
     bool bTemp;
 
+    u8CopyBufferSize = validateCoils(modH);
+    if (u8CopyBufferSize != 0) return u8CopyBufferSize;
+
     // get the first and last coil from the message
     uint16_t u16StartCoil = word( modH->u8Buffer[ ADD_HI ], modH->u8Buffer[ ADD_LO ] );
     uint16_t u16Coilno = word( modH->u8Buffer[ NB_HI ], modH->u8Buffer[ NB_LO ] );
@@ -1835,7 +1882,7 @@ int8_t process_FC15( modbusHandler_t *modH )
         u8currentBit = (uint8_t) (u16coil % 16);
 
         bTemp = bitRead(
-        			modH->u8Buffer[ u8frameByte ],
+                    modH->u8Buffer[ u8frameByte ],
                     u8bitsno );
 
         bitWrite(
@@ -1895,8 +1942,3 @@ int8_t process_FC16(modbusHandler_t *modH )
 
     return u8CopyBufferSize;
 }
-
-
-
-
-
